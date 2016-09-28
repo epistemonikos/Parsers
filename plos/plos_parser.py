@@ -1,4 +1,4 @@
-#import json
+import json
 from bs4 import BeautifulSoup
 import re
 
@@ -41,10 +41,15 @@ def plos_parser():
 
     #Searching for Publish date
     browser = soup.body.find_all('li', id='artPubDate')[0]
-    published = []
-    published.append(trim_string(re.sub('Published:', '', browser.text)))
+    published = {}
+    pubDate = trim_string(re.sub('Published:', '', browser.text))
+    published['year'] = re.search('\d{4}', pubDate).group(0)
+    published['month'] = re.sub('[^a-zA-Z]', '', pubDate)
+    resp['date'] = published
 
 
-#     json_data = json.dumps(resp)
-#     print(json_data)
+
+    json_data = json.dumps(resp)
+    print(json_data)
+
 plos_parser()
