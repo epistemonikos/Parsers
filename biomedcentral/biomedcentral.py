@@ -1,4 +1,5 @@
 import json
+from urllib.parse import urlparse, parse_qs
 from bs4 import BeautifulSoup
 
 def biomed_parser(file):
@@ -18,7 +19,7 @@ def biomed_parser(file):
     # Extraer Año
     year = soup.body.find('span', 'ArticleCitation_Year')
     if year:
-        resp["year"] = year.text.strip()
+        resp["date"] = year.text.strip()
 
     # Extraer Volume
     volume = soup.body.find('span', 'ArticleCitation_Volume')
@@ -31,19 +32,19 @@ def biomed_parser(file):
         resp["issue"] = issue.text.strip()
 
     # Extraer Paginas
-    pages = soup.body.find('span', 'ArticleCitation_Pages')
+    pages = soup.body.find('span', 'ArticleCitation_Pages')     # Parece que no existe en BioMed
     if pages:
-        resp["pages"] = pages.contents[0].strip()
+        resp["pages"] = pages.text.strip()
 
     # Extraer cita
-    cite = soup.body.find(id='citethis-text')
+    cite = soup.body.find(id='citethis-text')                   # Parece que no existe en BioMed
     if cite:
         resp["citation"] = cite.contents[0].strip()
 
     # Extraer DOI
     article_doi = soup.body.find('p', 'ArticleDOI')
     if article_doi:
-        resp["doi"] = article_doi.text[4:].strip()
+        resp["doi"] = article_doi.text[4:].strip()              # Viene como "DOI:xxx/xxx..."
 
     # Extraer Autores
     resp["authors"] = []
@@ -73,13 +74,14 @@ def biomed_parser(file):
         c["citation"] = r.contents[0].strip()
         doi = r.find('span', 'OccurrenceDOI')
         if doi:
-            c["doi"] = doi.a['href'][18:]
+            c["doi"] = doi.a['href'][18:]                       # Viene como URL
         pubmed = r.find('span', 'OccurrencePID')
         if pubmed:
-            c["pubmed"] = pubmed.a['href']
+            #c["pubmed"] = pubmed.a["href"]
+            c["pubmedID"] = parse_qs(urlparse(pubmed.a['href']).query)['list_uids'][0]
         scholar = r.find('span', 'OccurrenceGS')
         if scholar:
             c["scholar"] = scholar.a["href"]
         resp["references"].append(c)
-
-    return json.dump(resp)
+        
+    return json.dumps(resp)
