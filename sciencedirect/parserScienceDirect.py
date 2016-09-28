@@ -5,7 +5,7 @@ import re
 
 
 def parser():
-    soup = BeautifulSoup(open('sciencedirect.html'), 'html.parser')
+    soup = BeautifulSoup(open('Assessment of cardiovascular risk by use of multiple-risk-factor assessment equations_ A statement for healthcare professionals from the American Heart Association and the American College of Cardiology11This statement was approved by the American He.html'), 'html.parser')
     resp = {}
 
     # get the authors
@@ -26,6 +26,8 @@ def parser():
         for titles, texts in zip(abstract.find_all('h4'), abstract.find_all('p')):
             c[titles.get_text()] = texts.get_text()
         resp['abstract'] = c
+    else:
+
     # get the doi
     resp['doi'] = soup.body.find('dd','doi').get_text()
     #get journal
