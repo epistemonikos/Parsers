@@ -2,18 +2,52 @@ import json
 from bs4 import BeautifulSoup
 
 def biomed_parser(file):
+    """
+        this function parse and get relevant information from biomedcentral html pages.
+        :params file: html file
+    """
     soup = BeautifulSoup(open(file, encoding='utf-8'), 'html.parser')
     resp = {}
 
     # Extraer nombre
-    name = soup.body.find('h1', 'ArticleTitle')
-    if name:
-        resp["name"] = name.text.strip()
+    title = soup.body.find('h1', 'ArticleTitle')
+    if title:
+        resp["title"] = title.text.strip()
 
-    # Extraer Journal
-    journal = soup.body.find('span', 'JournalTitle')
-    if journal:
-        resp["journal"] = journal.text.strip()
+    # Extraer Abstract
+    resp["abstract"] = get_abstract(soup)
+
+    #Extraer ids
+    resp["ids"] = get_identifiers(soup)
+
+    #Extraer publication info
+    resp["publication_info"] = get_publication_info(soup)
+
+    # Extraer cita
+    cite = soup.body.find(id='citethis-text')
+    if cite:
+        resp["citation"] = cite.contents[0].strip()
+
+    # Extraer Autores
+    resp["authors"] = get_authors(soup)
+
+    # Extraer keywords
+    resp["keywords"] = get_keywords(soup)
+    # Extraer referencias
+    resp["references"] = get_references(soup)
+
+    return json.dumps(resp)
+
+def get_publication_info(soup):
+    """
+        this function get publication information from html.
+        :params soup: instance of BeautifulSoup class
+    """
+    resp = {}
+    # Extraer Paginas
+    pages = soup.body.find('span', 'ArticleCitation_Pages')
+    if pages:
+        resp["pages"] = pages.contents[0].strip()
 
     # Extraer Año
     year = soup.body.find('span', 'ArticleCitation_Year')
@@ -23,51 +57,76 @@ def biomed_parser(file):
     # Extraer Volume
     volume = soup.body.find('span', 'ArticleCitation_Volume')
     if volume:
-        resp["volume"] = volume.text.strip()     # tiene <strong> entremedio :C
+        resp["volume"] = volume.text.strip()  # tiene <strong> entremedio :C
 
+    # Extraer Journal
+    journal = soup.body.find('span', 'JournalTitle')
+    if journal:
+        resp["journal"] = journal.text.strip()
+
+
+    return resp
+
+def get_identifiers(soup):
+    """
+        this function get identifiers from html.
+        :params soup: instance of BeautifulSoup class
+    """
+    resp = {}
+    # Extraer DOI
+    article_doi = soup.body.find('p', 'ArticleDOI')
+    if article_doi:
+        resp["doi"] = article_doi.text[4:].strip()
     # Extraer Issue
     issue = soup.body.find('span', 'ArticleCitation_Issue')
     if issue:
         resp["issue"] = issue.text.strip()
 
-    # Extraer Paginas
-    pages = soup.body.find('span', 'ArticleCitation_Pages')
-    if pages:
-        resp["pages"] = pages.contents[0].strip()
+    return resp
 
-    # Extraer cita
-    cite = soup.body.find(id='citethis-text')
-    if cite:
-        resp["citation"] = cite.contents[0].strip()
-
-    # Extraer DOI
-    article_doi = soup.body.find('p', 'ArticleDOI')
-    if article_doi:
-        resp["doi"] = article_doi.text[4:].strip()
-
-    # Extraer Autores
-    resp["authors"] = []
+def get_authors(soup):
+    """
+        this function get authors from html.
+        :params soup: instance of BeautifulSoup class
+    """
+    resp = []
     for a in soup.body.find_all('span', 'AuthorName'):
-        resp["authors"].append(a.text.strip())
+        resp.append(a.text.strip())
+    return resp
 
-    # Extraer Abstract
+def get_abstract(soup):
+    """
+        this function get abstract from html.
+        :params soup: instance of BeautifulSoup class
+    """
+    resp = []
     abstract = soup.body.find('section', 'Abstract')
     sections = abstract.find_all('div', 'AbstractSection')
     if sections:
         a = {}
         for s in sections:
             a[s.h3.text.strip()] = s.p.text.strip()
-        resp["abstract"] = a
+        resp = a
     else:
-        resp["abstract"] = abstract.p.text.strip()
+        resp = abstract.p.text.strip()
+    return resp
 
-    # Extraer keywords
-    resp["keywords"] = []
+def get_keywords(soup):
+    """
+        this function get keywords from html.
+        :params soup: instance of BeautifulSoup class
+    """
+    resp = []
     for k in soup.body.find_all('span', 'Keyword'):
-        resp["keywords"].append(k.text.strip())
+        resp.append(k.text.strip())
+    return resp
 
-    # Extraer referencias
-    resp["references"] = []
+def get_references(soup):
+    """
+    this function get all references from html.
+    :params soup: instance of BeautifulSoup class
+    """
+    resp = []
     for r in soup.body.find_all('cite', 'CitationContent'):
         c = {}
         c["citation"] = r.contents[0].strip()
@@ -80,6 +139,7 @@ def biomed_parser(file):
         scholar = r.find('span', 'OccurrenceGS')
         if scholar:
             c["scholar"] = scholar.a["href"]
-        resp["references"].append(c)
+        resp.append(c)
+    return resp
 
-    return json.dump(resp)
+print(biomed_parser("biomedcentral.html"))
