@@ -3,10 +3,12 @@ from bs4 import BeautifulSoup
 import json
 import re
 
+STANDARDJSON= {"references" : None,"keywords":None ,'cited_articules' : None ,"language": None, "authors":None, "abstract": None, "ids": {"embase": None, "doi": None, "pubmed": None}, "title":None, "publication_type": {"issue": None, "pagination": None, "cited_medium": None, "year": None, "title": None, "volume": None, "ISSN": None, "type": None}}
+
 
 def parser():
-    soup = BeautifulSoup(open('test2.html'), 'html.parser')
-    resp = {}
+    soup = BeautifulSoup(open('sciencedirect.html'), 'html.parser')
+    resp = STANDARDJSON
 
     # get the authors
     def addAuthors(author):
@@ -30,14 +32,14 @@ def parser():
         resp['abstract'] = c
     # get the doi
     if soup.body.find('dd','doi'):
-        resp['doi'] = soup.body.find('dd','doi').get_text()
+        resp['ids']['doi'] = soup.body.find('dd','doi').get_text()
     elif soup.body.find('p','article-doi'):
-        resp['doi'] = soup.body.find('p','article-doi').a['href']
+        resp['ids']['doi'] = soup.body.find('p','article-doi').a['href']
     #get journal
     if soup.body.find('div','publicationHead'):
-        resp['journal'] = soup.body.find('div','publicationHead').find('span').get_text()
+        resp['publication_type']['title'] = soup.body.find('div','publicationHead').find('span').get_text()
     elif soup.body.find('p','journal-title'):
-        resp['journal'] = soup.body.find('p','journal-title').a.get_text()
+        resp['publication_type']['title'] = soup.body.find('p','journal-title').a.get_text()
     #get keyword
     if soup.body.find('ul','keyword'):
       k =[]
@@ -46,9 +48,9 @@ def parser():
       resp['keywords'] = k
     #get name
     if soup.body.find('h1','svTitle'):
-        resp['name'] = soup.body.find('h1','svTitle').get_text()
+        resp['title'] = soup.body.find('h1','svTitle').get_text()
     elif soup.body.find('h1','article-title'):
-        resp['name'] = soup.body.find('h1','article-title').get_text()
+        resp['title'] = soup.body.find('h1','article-title').get_text()
     #get reference
     r =[]
     for groupofreferences in soup.body.find_all('ol','references'):
@@ -84,10 +86,16 @@ def parser():
         volume = soup.body.find('p','volIssue')
     elif soup.body.find('p','journal-volume'):
         volume = soup.body.find('p','journal-volume')
+    print (volume)
     if volume:
-        resp['volume'] = volume.a.get_text()
+        #get volume
+        resp['publication_type']['volume'] = volume.a.get_text().split(',')[0]
+        #get issue
+        resp['publication_type']['issue'] = volume.a.get_text().split(',')[1]
+        #get pagination
+        resp['publication_type']['pagination'] =  volume.contents[1].split(',')[2]
         #get date
-        resp['date'] = re.search(r', (.*),', volume.contents[1]).group(1)
+        resp['publication_type']['year'] = re.search(r', (.*),', volume.contents[1]).group(1)
 
 
     #get cited articules
@@ -100,7 +108,7 @@ def parser():
             citedarticules['ref'] = articules.find('li', 'artTitle').a['href']
             citedarticules['source'] = articules.find('li', 'srcTitle').get_text()
             ca.append(citedarticules)
-        resp['cited articules'] = ca
+        resp['cited_articules'] = ca
     json_data = json.dumps(resp)
     print (json_data)
 parser()
