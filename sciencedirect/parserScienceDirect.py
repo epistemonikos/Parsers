@@ -2,8 +2,19 @@ __author__ = 'fmosso'
 from bs4 import BeautifulSoup
 import json
 import re
+from functools import reduce
 
 STANDARDJSON= {"references" : None,"keywords":None ,'cited_articules' : None ,"language": None, "authors":None, "abstract": None, "ids": {"embase": None, "doi": None, "pubmed": None}, "title":None, "publication_type": {"issue": None, "pagination": None, "cited_medium": None, "year": None, "title": None, "volume": None, "ISSN": None, "type": None}}
+
+
+def getDoi(url):
+    stringSplit = url.split('/')
+    if ((stringSplit[0] == 'http:' or stringSplit[0] == 'https:') and stringSplit[2] == "dx.doi.org"):
+        doi = stringSplit[3:]
+        return reduce( lambda x, y: x + y, doi, "")
+    else:
+       return  url
+
 
 
 def parser():
@@ -32,9 +43,9 @@ def parser():
         resp['abstract'] = c
     # get the doi
     if soup.body.find('dd','doi'):
-        resp['ids']['doi'] = soup.body.find('dd','doi').get_text()
+        resp['ids']['doi'] = getDoi(soup.body.find('dd','doi').get_text())
     elif soup.body.find('p','article-doi'):
-        resp['ids']['doi'] = soup.body.find('p','article-doi').a['href']
+        resp['ids']['doi'] = getDoi(soup.body.find('p','article-doi').a['href'])
     #get journal
     if soup.body.find('div','publicationHead'):
         resp['publication_type']['title'] = soup.body.find('div','publicationHead').find('span').get_text()
@@ -59,12 +70,12 @@ def parser():
             #get doi if they have
             doi = references.find('li','source')
             if doi and doi.find('a'):
-                ref['doi'] = doi.find('a').get_text()
+                ref['doi'] = getDoi(doi.find('a').get_text())
             #try to get doi from external link
             else:
                 for external_link in references.find('li','external refPlaceHolder').find_all('div'):
                    if external_link.get_text() == 'CrossRef':
-                        ref['doi'] = external_link.a['href']
+                        ref['doi'] = getDoi(external_link.a['href'])
             #get name
             if references.find('li','title'):
                  ref['name'] = references.find('li','title').p.get_text()
@@ -86,7 +97,6 @@ def parser():
         volume = soup.body.find('p','volIssue')
     elif soup.body.find('p','journal-volume'):
         volume = soup.body.find('p','journal-volume')
-    print (volume)
     if volume:
         #get volume
         resp['publication_type']['volume'] = volume.a.get_text().split(',')[0]
