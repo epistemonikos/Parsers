@@ -2,11 +2,24 @@ __author__ = 'fmosso'
 from bs4 import BeautifulSoup
 import json
 import re
+from functools import reduce
+
+STANDARDJSON= {"references" : None,"keywords":None ,'cited_articules' : None ,"language": None, "authors":None, "abstract": None, "ids": {"embase": None, "doi": None, "pubmed": None}, "title":None, "publication_type": {"issue": None, "pagination": None, "cited_medium": None, "year": None, "title": None, "volume": None, "ISSN": None, "type": None}}
+
+
+def getDoi(url):
+    stringSplit = url.split('/')
+    if ((stringSplit[0] == 'http:' or stringSplit[0] == 'https:') and stringSplit[2] == "dx.doi.org"):
+        doi = stringSplit[3:]
+        return reduce( lambda x, y: x + y, doi, "")
+    else:
+       return  url
+
 
 
 def parser():
-    soup = BeautifulSoup(open('test2.html'), 'html.parser')
-    resp = {}
+    soup = BeautifulSoup(open('sciencedirect.html'), 'html.parser')
+    resp = STANDARDJSON
 
     # get the authors
     def addAuthors(author):
@@ -30,14 +43,14 @@ def parser():
         resp['abstract'] = c
     # get the doi
     if soup.body.find('dd','doi'):
-        resp['doi'] = soup.body.find('dd','doi').get_text()
+        resp['ids']['doi'] = getDoi(soup.body.find('dd','doi').get_text())
     elif soup.body.find('p','article-doi'):
-        resp['doi'] = soup.body.find('p','article-doi').a['href']
+        resp['ids']['doi'] = getDoi(soup.body.find('p','article-doi').a['href'])
     #get journal
     if soup.body.find('div','publicationHead'):
-        resp['journal'] = soup.body.find('div','publicationHead').find('span').get_text()
+        resp['publication_type']['title'] = soup.body.find('div','publicationHead').find('span').get_text()
     elif soup.body.find('p','journal-title'):
-        resp['journal'] = soup.body.find('p','journal-title').a.get_text()
+        resp['publication_type']['title'] = soup.body.find('p','journal-title').a.get_text()
     #get keyword
     if soup.body.find('ul','keyword'):
       k =[]
@@ -46,9 +59,9 @@ def parser():
       resp['keywords'] = k
     #get name
     if soup.body.find('h1','svTitle'):
-        resp['name'] = soup.body.find('h1','svTitle').get_text()
+        resp['title'] = soup.body.find('h1','svTitle').get_text()
     elif soup.body.find('h1','article-title'):
-        resp['name'] = soup.body.find('h1','article-title').get_text()
+        resp['title'] = soup.body.find('h1','article-title').get_text()
     #get reference
     r =[]
     for groupofreferences in soup.body.find_all('ol','references'):
@@ -57,12 +70,12 @@ def parser():
             #get doi if they have
             doi = references.find('li','source')
             if doi and doi.find('a'):
-                ref['doi'] = doi.find('a').get_text()
+                ref['doi'] = getDoi(doi.find('a').get_text())
             #try to get doi from external link
             else:
                 for external_link in references.find('li','external refPlaceHolder').find_all('div'):
                    if external_link.get_text() == 'CrossRef':
-                        ref['doi'] = external_link.a['href']
+                        ref['doi'] = getDoi(external_link.a['href'])
             #get name
             if references.find('li','title'):
                  ref['name'] = references.find('li','title').p.get_text()
@@ -85,9 +98,14 @@ def parser():
     elif soup.body.find('p','journal-volume'):
         volume = soup.body.find('p','journal-volume')
     if volume:
-        resp['volume'] = volume.a.get_text()
+        #get volume
+        resp['publication_type']['volume'] = volume.a.get_text().split(',')[0]
+        #get issue
+        resp['publication_type']['issue'] = volume.a.get_text().split(',')[1]
+        #get pagination
+        resp['publication_type']['pagination'] =  volume.contents[1].split(',')[2]
         #get date
-        resp['date'] = re.search(r', (.*),', volume.contents[1]).group(1)
+        resp['publication_type']['year'] = re.search(r', (.*),', volume.contents[1]).group(1)
 
 
     #get cited articules
@@ -100,7 +118,7 @@ def parser():
             citedarticules['ref'] = articules.find('li', 'artTitle').a['href']
             citedarticules['source'] = articules.find('li', 'srcTitle').get_text()
             ca.append(citedarticules)
-        resp['cited articules'] = ca
+        resp['cited_articules'] = ca
     json_data = json.dumps(resp)
     print (json_data)
 parser()
