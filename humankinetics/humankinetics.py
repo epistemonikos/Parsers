@@ -45,24 +45,25 @@ def get_publication_info(soup):
     """
     resp = {}
     # Extraer Paginas
-    pages = soup.body.find('span', 'ArticleCitation_Pages')
+    pages = soup.body.find('div', 'citationFormat')
     if pages:
-        resp["pages"] = pages.contents[0].strip()
+        aux = pages.text.strip()
+        aux = str.index(aux, beg='Pages:', end='doi')
+        print(aux)
+        resp["pages"] = aux
 
-    # Extraer Año
-    year = soup.body.find('span', 'ArticleCitation_Year')
-    if year:
-        resp["year"] = year.text.strip()
 
     # Extraer Volume
-    volume = soup.body.find('span', 'ArticleCitation_Volume')
+    volume = soup.findAll('div', 'citationFormat')
     if volume:
-        resp["volume"] = volume.text.strip()  # tiene <strong> entremedio :C
+        aux = volume.text.strip()
+        aux = str.index(aux, beg='Volume:', end='Pages')
+        resp["volume"] = aux
 
     # Extraer Journal
-    journal = soup.body.find('span', 'JournalTitle')
+    journal = soup.findAll(attrs={'name' : 'citation_journal_title'})
     if journal:
-        resp["journal"] = journal.text.strip()
+        resp["journal"] = journal[0]['content']
 
 
     return resp
