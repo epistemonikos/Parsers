@@ -104,7 +104,6 @@ def get_keywords(soup):
     keys = keywords.split(',')
     for k in keys:
         resp.append(k.strip())
-    print(resp)
     return resp
 
 
