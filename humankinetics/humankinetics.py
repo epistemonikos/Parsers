@@ -23,18 +23,12 @@ def humankinetics_parser(file):
     #Extraer publication info
     resp["publication_info"] = get_publication_info(soup)
 
-    # Extraer cita
-    cite = soup.body.find(id='citethis-text')
-    if cite:
-        resp["citation"] = cite.contents[0].strip()
-
     # Extraer Autores
     resp["authors"] = get_authors(soup)
 
     # Extraer keywords
     resp["keywords"] = get_keywords(soup)
-    # Extraer referencias
-    resp["references"] = get_references(soup)
+
 
     return json.dumps(resp)
 
@@ -48,20 +42,21 @@ def get_publication_info(soup):
     pages = soup.body.find('div', 'citationFormat')
     if pages:
         aux = pages.text.strip()
-        aux = str.index(aux, beg='Pages:', end='doi')
-        print(aux)
-        resp["pages"] = aux
-
+        ini = aux.index('Pages:')
+        end = aux.index('doi:')
+        resp["pages"] = aux[(ini+7):end]
 
     # Extraer Volume
-    volume = soup.findAll('div', 'citationFormat')
+    volume = soup.find('div', 'citationFormat')
     if volume:
         aux = volume.text.strip()
-        aux = str.index(aux, beg='Volume:', end='Pages')
-        resp["volume"] = aux
+        ini = aux.index('Volume:')
+        end = aux.index('Issue:')
+        resp["volume"] = aux[(ini+7):end]
 
     # Extraer Journal
     journal = soup.findAll(attrs={'name' : 'citation_journal_title'})
+
     if journal:
         resp["journal"] = journal[0]['content']
 
@@ -75,7 +70,7 @@ def get_identifiers(soup):
     """
     resp = {}
     # Extraer DOI
-    article_doi = soup.findAll({'scheme': 'doi'})
+    article_doi = soup.findAll(attrs={'scheme': 'doi'})
     if article_doi:
         resp["doi"] = article_doi[0]['content']
     return resp
@@ -86,8 +81,9 @@ def get_authors(soup):
         :params soup: instance of BeautifulSoup class
     """
     resp = []
-    for a in soup.body.find_all('span', 'AuthorName'):
-        resp.append(a.text.strip())
+    authors = soup.findAll(attrs={'name': 'dc.Creator'})
+    for a in authors:
+        resp.append(a['content'].strip())
     return resp
 
 def get_description(soup):
@@ -95,8 +91,7 @@ def get_description(soup):
         this function get abstract from html.
         :params soup: instance of BeautifulSoup class
     """
-    description = soup.findAll('name', 'dc.Description')
-
+    description = soup.findAll(attrs={'name': 'dc.Description'})
     return description[0]['content']
 
 def get_keywords(soup):
@@ -105,29 +100,12 @@ def get_keywords(soup):
         :params soup: instance of BeautifulSoup class
     """
     resp = []
-    for k in soup.body.find_all('span', 'Keyword'):
-        resp.append(k.text.strip())
+    keywords = soup.findAll(attrs={'name': 'keywords'})[0]['content']
+    keys = keywords.split(',')
+    for k in keys:
+        resp.append(k.strip())
+    print(resp)
     return resp
 
-def get_references(soup):
-    """
-    this function get all references from html.
-    :params soup: instance of BeautifulSoup class
-    """
-    resp = []
-    for r in soup.body.find_all('cite', 'CitationContent'):
-        c = {}
-        c["citation"] = r.contents[0].strip()
-        doi = r.find('span', 'OccurrenceDOI')
-        if doi:
-            c["doi"] = doi.a['href'][18:]
-        pubmed = r.find('span', 'OccurrencePID')
-        if pubmed:
-            c["pubmed"] = pubmed.a['href']
-        scholar = r.find('span', 'OccurrenceGS')
-        if scholar:
-            c["scholar"] = scholar.a["href"]
-        resp.append(c)
-    return resp
 
 print(humankinetics_parser("Postoperative Rehabilitation after Hip Resurfacing_ A Systematic Review_ Journal of Sport Rehabilitation_ Vol 25, No 2.html" ))
