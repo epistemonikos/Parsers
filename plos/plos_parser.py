@@ -11,14 +11,14 @@ def trim_string(str):
 def plos_parser(file):
     soup = BeautifulSoup(open(file, encoding='utf-8'), 'html.parser')
     return {
-        'title': get_title(soup),
-        'publication_info': get_publication_info(soup),
-        'citation': get_citation(soup),
-        'ids': get_identifiers(soup),
-        'authors': get_authors(soup),
-        'abstract': get_abstract(soup),
-        'keywords': get_keywords(soup),
-#        'references': get_references(soup)
+        #'title': get_title(soup),
+        #'publication_info': get_publication_info(soup),
+        #'citation': get_citation(soup),
+        #'ids': get_identifiers(soup),
+        #'authors': get_authors(soup),
+        #'abstract': get_abstract(soup),
+        #'keywords': get_keywords(soup),
+        'references': get_references(soup)
     }
 
 
@@ -140,10 +140,27 @@ def get_pages(soup):
     return page
 
 
-'''
-    #Searching for References
-    browser = soup.body.find_all('ol', 'references')[0]
-'''
+def get_references(soup):
+    references = soup.body.find_all('ol', 'references')
+    if references:
+        references = references[0].findAll('li')
+        references = [get_reference_info(r) for r in references]
+    return references
+
+
+def get_reference_info(ref):
+    return {
+        'reference': get_reference_citation(ref.get_text('|', strip=True)),
+        'ids': None
+    }
+
+
+def get_reference_citation(text):
+    text = re.sub(u"\u2013", "-", text)
+    lista = text.split('|')
+    lista.pop(0)
+    return trim_string(' '.join(lista[:-3]))
+
 
 json_data = json.dumps(plos_parser("plos.html"))
 print(json_data)
