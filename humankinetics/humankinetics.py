@@ -15,7 +15,7 @@ def humankinetics_parser(file):
         resp["title"] = title[0]['content']
 
     # Extraer Description
-    resp["description"] = get_description(soup)
+    resp["abstract"] = get_abstract(soup)
 
     #Extraer ids
     resp["ids"] = get_identifiers(soup)
@@ -86,7 +86,7 @@ def get_authors(soup):
         resp.append(a['content'].strip())
     return resp
 
-def get_description(soup):
+def get_abstract(soup):
     """
         this function get abstract from html.
         :params soup: instance of BeautifulSoup class

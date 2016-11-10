@@ -10,9 +10,9 @@ def biomed_parser(file):
     resp = {}
 
     # Extraer nombre
-    title = soup.body.find('h1', 'ArticleTitle')
+    title = soup.findAll(attrs={'name': 'citation_title'})
     if title:
-        resp["title"] = title.text.strip()
+        resp["title"] = title[0]['content']
 
     # Extraer Abstract
     resp["abstract"] = get_abstract(soup)
@@ -23,10 +23,6 @@ def biomed_parser(file):
     #Extraer publication info
     resp["publication_info"] = get_publication_info(soup)
 
-    # Extraer cita
-    cite = soup.body.find(id='citethis-text')
-    if cite:
-        resp["citation"] = cite.contents[0].strip()
 
     # Extraer Autores
     resp["authors"] = get_authors(soup)
@@ -81,6 +77,9 @@ def get_identifiers(soup):
     issue = soup.body.find('span', 'ArticleCitation_Issue')
     if issue:
         resp["issue"] = issue.text.strip()
+
+    return resp
+
 
     return resp
 

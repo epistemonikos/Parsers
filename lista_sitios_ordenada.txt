@@ -1,10 +1,10 @@
 sciencedirect.com	13550
 wiley.com	10312
 springer.com	5681
-wkhealth.com	3826
+wkhealth.com	3826    PAYWALL
 plos.org	1886
 biomedcentral.com	1832
-tandfonline.com	1333
+tandfonline.com	1333    PAYWALL
 doi.org	991
 hindawi.com	712
 nature.com	696
