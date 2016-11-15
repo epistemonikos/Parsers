@@ -1,4 +1,4 @@
-import json
+from urllib.parse import urlparse, parse_qs
 from bs4 import BeautifulSoup
 
 def biomed_parser(file):
@@ -7,138 +7,215 @@ def biomed_parser(file):
         :params file: html file
     """
     soup = BeautifulSoup(open(file, encoding='utf-8'), 'html.parser')
-    resp = {}
+    return {
+        'title': get_title(soup),
+        'publication_info': get_publication_info(soup),
+        'citation': get_citation(soup),
+        'ids': get_identifiers(soup),
+        'authors': get_authors(soup),
+        'abstract': get_abstract(soup),
+        'keywords': get_keywords(soup),
+        'references': get_references(soup)
+    }
 
-    # Extraer nombre
-    title = soup.findAll(attrs={'name': 'citation_title'})
+
+def get_title(soup):
+    title = soup.body.find('h1', 'ArticleTitle')
     if title:
-        resp["title"] = title[0]['content']
+        title = title.text.strip()
+    return title
 
-    # Extraer Abstract
-    resp["abstract"] = get_abstract(soup)
-
-    #Extraer ids
-    resp["ids"] = get_identifiers(soup)
-
-    #Extraer publication info
-    resp["publication_info"] = get_publication_info(soup)
-
-
-    # Extraer Autores
-    resp["authors"] = get_authors(soup)
-
-    # Extraer keywords
-    resp["keywords"] = get_keywords(soup)
-    # Extraer referencias
-    resp["references"] = get_references(soup)
-
-    return json.dumps(resp)
 
 def get_publication_info(soup):
     """
         this function get publication information from html.
         :params soup: instance of BeautifulSoup class
     """
-    resp = {}
-    # Extraer Paginas
-    pages = soup.body.find('span', 'ArticleCitation_Pages')
-    if pages:
-        resp["pages"] = pages.contents[0].strip()
+    return {
+        'journal': get_journal(soup),
+        'year': get_year(soup),
+        'volume': get_volume(soup),
+        'issue': get_issue(soup),
+        'pages': get_pages(soup)
+    }
 
-    # Extraer Año
-    year = soup.body.find('span', 'ArticleCitation_Year')
-    if year:
-        resp["year"] = year.text.strip()
 
-    # Extraer Volume
-    volume = soup.body.find('span', 'ArticleCitation_Volume')
-    if volume:
-        resp["volume"] = volume.text.strip()  # tiene <strong> entremedio :C
-
-    # Extraer Journal
+def get_journal(soup):
     journal = soup.body.find('span', 'JournalTitle')
     if journal:
-        resp["journal"] = journal.text.strip()
+        journal = journal.text.strip()
+    return journal
 
 
-    return resp
+def get_year(soup):
+    year = soup.body.find('span', 'ArticleCitation_Year')
+    if year:
+        year = year.text.strip()
+    return year
+
+
+def get_volume(soup):
+    volume = soup.body.find('span', 'ArticleCitation_Volume')
+    if volume:
+        volume = volume.text.strip()
+    return volume
+
+
+def get_issue(soup):
+    issue = soup.body.find('span', 'ArticleCitation_Issue')
+    if issue:
+        issue = issue.text.strip()
+    return issue
+
+
+def get_pages(soup):
+    pages = soup.body.find('span', 'ArticleCitation_Pages')
+    if pages:  # "pp X-Y"
+        pages = pages.text.strip()
+        if '–' in pages:
+            pages = pages[3:].split('–')  # [ X, Y ]
+            return {
+                'first': pages[0],
+                'last': pages[1]
+            }
+    return pages
+
+
+def get_citation(soup):
+    return None
+
 
 def get_identifiers(soup):
     """
         this function get identifiers from html.
         :params soup: instance of BeautifulSoup class
     """
-    resp = {}
-    # Extraer DOI
+    return {
+        'doi': get_doi(soup),
+        'pmid': get_pubmedID(soup)
+    }
+
+
+def get_doi(soup):
     article_doi = soup.body.find('p', 'ArticleDOI')
     if article_doi:
-        resp["doi"] = article_doi.text[4:].strip()
-    # Extraer Issue
-    issue = soup.body.find('span', 'ArticleCitation_Issue')
-    if issue:
-        resp["issue"] = issue.text.strip()
-
-    return resp
+        article_doi = article_doi.text[4:].strip()
+    return article_doi
 
 
-    return resp
+def get_pubmedID(soup):
+    return None
+
 
 def get_authors(soup):
     """
         this function get authors from html.
         :params soup: instance of BeautifulSoup class
     """
-    resp = []
-    for a in soup.body.find_all('span', 'AuthorName'):
-        resp.append(a.text.strip())
-    return resp
+    return [ a.text.strip() for a in soup.body.find_all('span', 'AuthorName') ]
+
 
 def get_abstract(soup):
     """
         this function get abstract from html.
         :params soup: instance of BeautifulSoup class
     """
-    resp = []
     abstract = soup.body.find('section', 'Abstract')
-    sections = abstract.find_all('div', 'AbstractSection')
-    if sections:
-        a = {}
-        for s in sections:
-            a[s.h3.text.strip()] = s.p.text.strip()
-        resp = a
-    else:
-        resp = abstract.p.text.strip()
-    return resp
+    if abstract:
+        sections = abstract.find_all('div', 'AbstractSection')
+        if sections:
+            abstract = {}
+            for s in sections:
+                if s.h3:
+                    abstract[s.h3.text.strip()] = s.p.text.strip()
+        else:
+            abstract = abstract.p.text.strip()
+    return abstract
+
 
 def get_keywords(soup):
     """
         this function get keywords from html.
         :params soup: instance of BeautifulSoup class
     """
-    resp = []
-    for k in soup.body.find_all('span', 'Keyword'):
-        resp.append(k.text.strip())
-    return resp
+    return [ k.text.strip() for k in soup.body.find_all('span', 'Keyword') ]
+
 
 def get_references(soup):
     """
     this function get all references from html.
     :params soup: instance of BeautifulSoup class
     """
-    resp = []
-    for r in soup.body.find_all('cite', 'CitationContent'):
-        c = {}
-        c["citation"] = r.contents[0].strip()
-        doi = r.find('span', 'OccurrenceDOI')
-        if doi:
-            c["doi"] = doi.a['href'][18:]
-        pubmed = r.find('span', 'OccurrencePID')
-        if pubmed:
-            c["pubmed"] = pubmed.a['href']
-        scholar = r.find('span', 'OccurrenceGS')
-        if scholar:
-            c["scholar"] = scholar.a["href"]
-        resp.append(c)
-    return resp
+    return [ get_reference_info(r) for r in soup.body.find_all('cite', 'CitationContent') ]
 
-print(biomed_parser("biomedcentral.html"))
+
+def get_reference_info(ref):
+    return {
+        'authors': get_ref_authors(ref),
+        'year': get_ref_year(ref),
+        'title': get_ref_title(ref),
+        'journal': get_ref_journal(ref),
+        'volume': get_ref_volume(ref),
+        'pages': get_ref_pages(ref),
+        'reference': get_ref_text(ref),
+        'ids': get_ref_identifiers(ref)
+    }
+
+
+def get_ref_authors(ref):
+    return []
+
+
+def get_ref_year(ref):
+    return None
+
+
+def get_ref_title(ref):
+    return None
+
+
+def get_ref_journal(ref):
+    return None
+
+
+def get_ref_volume(ref):
+    return None
+
+
+def get_ref_pages(ref):
+    return None
+
+
+def get_ref_text(ref):
+    if ref.contents:
+        return ref.contents[0].strip()
+    return None
+
+
+def get_ref_identifiers(ref):
+    return {
+        'doi': get_ref_doi(ref),
+        'pmid': get_ref_pubmedID(ref),
+        'scholar': get_ref_scholar(ref)
+    }
+
+
+def get_ref_doi(ref):
+    doi = ref.find('span', 'OccurrenceDOI')
+    if doi:
+        doi = doi.a['href'][18:]
+    return doi
+
+
+def get_ref_pubmedID(ref):
+    pubmed = ref.find('span', 'OccurrencePID')
+    if pubmed:
+        pmid = parse_qs(urlparse(pubmed.a['href']).query)['list_uids'][0]
+    return pubmed
+
+
+def get_ref_scholar(ref):
+    scholar = ref.find('span', 'OccurrenceGS')
+    if scholar:
+        scholar = scholar.a["href"]
+    return scholar
