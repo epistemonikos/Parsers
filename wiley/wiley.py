@@ -79,14 +79,10 @@ def get_pages(soup):
 
 
 def get_citation(soup):
-    cite = soup.body.find(id='citethis-text')
-    if cite:
-        cite = cite.text.strip()
-    return cite
+    return None
 
 
 def get_identifiers(soup):
-    # <li class="article-header__meta-info-item">
     return {
         'doi': get_doi(soup),
         'pmid': get_pubmedID(soup)
@@ -105,7 +101,6 @@ def get_pubmedID(soup):
 
 
 def get_authors(soup):
-    #<div class="article-header__authors-container">
     return [ a.text.strip() for a in soup.body.find_all('span', 'authors__name') ]
 
 

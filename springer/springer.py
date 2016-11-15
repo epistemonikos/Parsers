@@ -1,4 +1,3 @@
-import json
 from urllib.parse import urlparse, parse_qs
 from bs4 import BeautifulSoup
 
@@ -126,9 +125,38 @@ def get_references(soup):
 
 def get_reference_info(ref):
     return {
+        'authors': get_ref_authors(ref),
+        'year': get_ref_year(ref),
+        'title': get_ref_title(ref),
+        'journal': get_ref_journal(ref),
+        'volume': get_ref_volume(ref),
+        'pages': get_ref_pages(ref),
         'reference': get_ref_text(ref),
         'ids': get_ref_identifiers(ref)
     }
+
+def get_ref_authors(ref):
+    return []
+
+
+def get_ref_year(ref):
+    return None
+
+
+def get_ref_title(ref):
+    return None
+
+
+def get_ref_journal(ref):
+    return None
+
+
+def get_ref_volume(ref):
+    return None
+
+
+def get_ref_pages(ref):
+    return None
 
 
 def get_ref_text(ref):
