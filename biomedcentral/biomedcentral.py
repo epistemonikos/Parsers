@@ -210,7 +210,7 @@ def get_ref_doi(ref):
 def get_ref_pubmedID(ref):
     pubmed = ref.find('span', 'OccurrencePID')
     if pubmed:
-        pmid = parse_qs(urlparse(pubmed.a['href']).query)['list_uids'][0]
+        pubmed = parse_qs(urlparse(pubmed.a['href']).query)['list_uids'][0]
     return pubmed
 
 
