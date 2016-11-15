@@ -129,9 +129,12 @@ def get_keywords(soup):
 
 
 def get_references(soup):
-    return [ get_reference_info(r)
-             for r in soup.body.find('ul', 'article-section__references-list').children
-             if r != '\n']
+    refs = soup.body.find('ul', 'article-section__references-list')
+    if refs:
+        return [ get_reference_info(r)
+                 for r in refs.children
+                 if r != '\n']
+    return []
 
 
 def get_reference_info(ref):
