@@ -1,5 +1,5 @@
-from default_parser import Parser
 from urllib.parse import urlparse, parse_qs
+from parsers.default_parser import Parser
 
 
 class BMCParser(Parser):

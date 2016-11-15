@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 
+
 class Parser():
 
     def parse(self, file):
